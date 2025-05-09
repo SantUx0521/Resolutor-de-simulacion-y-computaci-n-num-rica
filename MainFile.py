@@ -31,7 +31,7 @@ def main():
 def taylor(a, n):
     x = sp.symbols('x') #crea una variable simbolica
     expr = input("Digite la funcion f(x): ")
-    f = sp.sympify(expr) #toma la funcion expresada en 'expr'
+    f = sp.sympify(expr, locals={'e': sp.exp(1)}) #toma la funcion expresada en 'expr'
     F = f
     T = f.subs(x, a) #en f sustituye la variable x en el valor a
     for k in range(1, n+1): 
@@ -59,9 +59,14 @@ def taylor(a, n):
                 x_vals = np.linspace(a - 3, a + 3, 400)
                 y_vals_f = f_func(x_vals)
                 y_vals_t = t_func(x_vals)
-
-                plt.plot(x_vals, y_vals_f, label='f(x)', color='blue') # grafica la funcion f(x) de color azul
-                plt.plot(x_vals, y_vals_t, label=f'Taylor orden {n}', color='black', linestyle='--') # grafica el polinomio de taylor de orden n de color negro 
+                
+                mask = np.isreal(y_vals_f) & np.isreal(y_vals_t)
+                x_plot = x_vals[mask]
+                y_plot_f = np.real(y_vals_f[mask])
+                y_plot_t = np.real(y_vals_t[mask])
+                
+                plt.plot(x_plot, y_plot_f, label='f(x)', color='black') # grafica la funcion f(x) de color azul
+                plt.plot(x_plot, y_plot_t, label=f'Taylor orden {n}', color='purple', linestyle='--') # grafica el polinomio de taylor de orden n de color negro 
                 plt.title('Polinomio de Taylor')
                 plt.xlabel('x')
                 plt.ylabel('y')
