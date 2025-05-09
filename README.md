@@ -1,1 +1,5 @@
-# Resolutor-de-simulacion-y-computaci-n-num-rica
+#Integrantes
+---
+- Veronica Lorena Mujica
+- Nicol Murillo
+- Santiago Useche
