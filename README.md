@@ -1,4 +1,4 @@
-#Integrantes
+# Integrantes
 ---
 - Veronica Lorena Mujica
 - Nicol Murillo
