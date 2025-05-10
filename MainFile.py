@@ -21,6 +21,8 @@ def main():
             a = int(input ("Digite el punto alrededor del cual desea el polinomio (X0 = ?): "))
             n = int(input("Digite el orden del polinomio de taylor: "))
             taylor(a, n) #taylor recibe tanto un x0 como un Pn(x)
+        elif choosen == 2:
+            teoria_del_error()
         elif choosen == 0:
                     print("Saliendo del programa...")
                     break
@@ -98,6 +100,76 @@ def taylor(a, n):
                 break
             else:
                 print("Opción inválida.")
+
+def teoria_del_error():
+    while True:
+        print("""
+        --- Submenú de Teoría del Error ---
+            1 - Calcular error absoluto y relativo
+            2 - Aritmética con redondeo y su error
+            3 - Aritmética con corte y su error
+            0 - Volver al menú principal
+        """)
+        option = int(input("Opción: "))
+
+        if option == 1:
+            verdadero = float(input("Ingrese el valor verdadero [P]: "))
+            aproximado = float(input("Ingrese el valor de aproximación de p [P*]: "))
+            error_abs = abs(verdadero - aproximado)
+            error_rel = error_abs / abs(verdadero) if verdadero != 0 else float('inf')
+            print(f"\nError absoluto: {error_abs}")
+            print(f"Error relativo: {error_rel:.5f} ({error_rel * 100:.2f}%)")
+
+        elif option == 2 or option == 3:
+            num1 = float(input("Ingrese el primer número [P]: "))
+            num2 = float(input("Ingrese el segundo número [q]: "))
+            digitos = int(input("Ingrese el número de dígitos significativos: "))
+
+            def procesar(num, metodo):
+                if num == 0:
+                    return 0.0
+                exp = int(np.floor(np.log10(abs(num))))
+                factor = 10 ** (digitos - exp - 1)
+                if metodo == "redondeo":
+                    resultado = round(num * factor) / factor
+                else:
+                    resultado = np.floor(num * factor) / factor
+                return resultado
+
+            metodo = "redondeo" if option == 2 else "corte"
+
+            num1_proc = procesar(num1, metodo)
+            num2_proc = procesar(num2, metodo)
+
+            def format_sig(x, sig):
+                if x == 0:
+                    return f"{0:.{sig-1}f}"
+                else:
+                    return f"{x:.{sig - int(np.floor(np.log10(abs(x)))) - 1}f}"
+
+            print(f"\n{metodo.capitalize()} de {num1} a {digitos} dígitos significativos: {format_sig(num1_proc, digitos)}")
+            print(f"{metodo.capitalize()} de {num2} a {digitos} dígitos significativos: {format_sig(num2_proc, digitos)}")
+
+            # Operación exacta r = p - q
+            resta_exacta = num1 - num2
+
+            # Operación procesada r* = p* - q*
+            resta_proc = num1_proc - num2_proc
+
+            print(f"\nResultados de la aritmética ({metodo}):")
+            print(f"\nr = {num1} - {num2} = {resta_exacta:.5f}")
+            print(f"r* = {format_sig(num1_proc, digitos)} - {format_sig(num2_proc, digitos)} = {format_sig(resta_proc, digitos)}")
+
+            error_abs_op = abs(resta_exacta - resta_proc)
+            error_rel_op = abs(resta_exacta - resta_proc) / abs(resta_exacta) if resta_exacta != 0 else 0
+
+            print(f"Error absoluto: |{resta_exacta:.5f} - {resta_proc:.5f}| = {error_abs_op:.5f}")
+            print(f"Error relativo: {error_rel_op:.5f} ({error_rel_op * 100:.2f}%)\n")
+
+        elif option == 0:
+            break
+        else:
+            print("Opción inválida.")
 
 
 if __name__ == "__main__":
