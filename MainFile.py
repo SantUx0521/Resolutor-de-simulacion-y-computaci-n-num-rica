@@ -47,9 +47,9 @@ def taylor(a, n):
                 3 - Calcular cota del error máximo (resto de Taylor)
                 0 - Volver al menú principal
             """)
-            sub_opcion = int(input("Opción: "))
+            sub_option  = int(input("Opción: "))
 
-            if sub_opcion == 1:
+            if sub_option  == 1:
                 print("\nPolinomio de Taylor:")
                 print(sp.expand(T)) # utilizado para expandir el polinomio de taylor, visualizandolo de mejor forma
 
@@ -74,25 +74,27 @@ def taylor(a, n):
                 plt.legend()
                 plt.show()
 
-            elif sub_opcion == 2:
+            elif sub_option  == 2:
                 x_eval = float(input("Valor de x para evaluar el error absoluto: "))
                 f_func = sp.lambdify(x, F, modules=["numpy"])  # usa F, no f
                 t_func = sp.lambdify(x, T, modules=["numpy"])
                 error = abs(f_func(x_eval) - t_func(x_eval))
+                print(f"\nf({x_eval}) = {f_func(x_eval)}")
+                print(f"P{n}({x_eval}) = {t_func(x_eval)}")
                 print(f"\nError absoluto |f(x) - Pn(x)| = {error}")
 
-            elif sub_opcion == 3:
+            elif sub_option  == 3:
                 x_eval = float(input("Valor de x para evaluar la cota del error: "))
                 df_n1 = f
                 for i in range(n+1):
                     df_n1 = sp.diff(df_n1, x)
                 df_n1_func = sp.lambdify(x, abs(df_n1), modules=["numpy"])
-                puntos = np.linspace(min(a, x_eval), max(a, x_eval), 1000)
-                max_derivada = max(df_n1_func(puntos))
-                resto = (max_derivada * abs(x_eval - a)**(n+1)) / factorial(n+1)
-                print(f"\nCota del error máximo (resto de Taylor): {resto}")
+                points = np.linspace(min(a, x_eval), max(a, x_eval), 1000)
+                max_derivative = max(df_n1_func(points))
+                remainder  = ( max_derivative * abs(x_eval - a)**(n+1)) / factorial(n+1)
+                print(f"\nCota del error máximo (resto de Taylor): {remainder }")
 
-            elif sub_opcion == 0:
+            elif sub_option  == 0:
                 break
             else:
                 print("Opción inválida.")
