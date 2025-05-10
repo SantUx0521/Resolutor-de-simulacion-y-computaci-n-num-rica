@@ -3,6 +3,8 @@ from math import *
 import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
+from tabulate import tabulate
+
 
 def main():
     while True:
@@ -12,8 +14,8 @@ def main():
                 1- Polinomios de taylor
                 2- Teoria del Error
                 3- Binarios
-                4- Metodo de newton
-                5- Metodo Bisercion
+                4- Metodo de Newton Raphson
+                5- Metodo de Bisercion
                 0 - Salir
     """)
         choosen = int(input("Opcion: "))
@@ -23,6 +25,16 @@ def main():
             taylor(a, n) #taylor recibe tanto un x0 como un Pn(x)
         elif choosen == 2:
             teoria_del_error()
+        
+        elif choosen == 3:
+            binario()
+        
+        elif choosen == 4:
+            NewtonRaphson()
+        
+        elif choosen == 5:
+            MetodoBisec()
+
         elif choosen == 0:
                     print("Saliendo del programa...")
                     break
@@ -170,6 +182,113 @@ def teoria_del_error():
             break
         else:
             print("Opción inválida.")
+def NewtonRaphson():
+    # Solicita la función como texto
+    x = sp.symbols('x')
+    locals_dict = {'e': sp.E, 'ln': sp.log}
+    fx_input = input("Ingresa la función f(x): ")
+    fx_expr = sp.sympify(fx_input, locals=locals_dict)
+    dfx_expr = sp.diff(fx_expr, x)
+
+    # Crea funciones evaluables para f y f'
+    f = sp.lambdify(x, fx_expr, modules=[{'e': np.e}, 'numpy'])
+    f1 = sp.lambdify(x, dfx_expr, modules=[{'e': np.e}, 'numpy'])
+
+    x0 = float(input("Ingresa el valor inicial x0: "))
+    tol = float(input("Ingresa la tolerancia (ej. 1e-5): "))
+    imax = int(input("Ingresa el número máximo de iteraciones: "))
+
+    # Inicialización
+    xr = x0
+    ea = 2 * tol
+    i = 0
+    tabla = []
+    tabla.append([i, xr, f(xr), f1(xr), "--", "--"])
+
+    while ea > tol and i < imax:
+        x_old = xr
+        xr = xr - f(xr) / f1(xr)
+        i += 1
+        ea = abs(xr - x_old)
+        er = abs(ea / xr) * 100 if xr != 0 else 0
+        tabla.append([i, xr, f(xr), f1(xr), ea, er])
+
+    # Mostrar resultados
+    print("\nMétodo de Newton-Raphson")
+    print(f"Raíz aproximada: x = {xr}, f(x) = {f(xr)}\n")
+    print(tabulate(tabla, headers=["Iteración", "x", "f(x)", "f'(x)", "Error abs", "Error rel (%)"]))
+
+    x_vals = np.linspace(xr - 5, xr + 5, 400)
+    y_vals = f(x_vals)
+
+    plt.figure(figsize=(10, 6))
+    plt.axhline(0, color='gray', linestyle=':')
+    plt.plot(x_vals, y_vals, label="f(x)", color='blue')
+    plt.plot(xr, f(xr), 'ro', label="Raíz aproximada")
+    plt.title("Método de Newton-Raphson")
+    plt.xlabel("x")
+    plt.ylabel("f(x)")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def MetodoBisec():
+    # Solicita la función como texto
+    x = sp.symbols('x')
+    locals_dict = {'e': sp.E, 'ln': sp.log}
+    fx_input = input("Ingresa la función f(x): ")
+    fx_expr = sp.sympify(fx_input, locals=locals_dict)
+    
+    # Crea función evaluable
+    f = sp.lambdify(x, fx_expr, modules=[{'e': np.e}, 'numpy'])
+    
+    # Pide los datos necesarios
+    a = float(input("Ingrese el límite inferior a: "))
+    b = float(input("Ingrese el límite superior b: "))
+    tol = float(input("Ingrese la tolerancia (ej. 1e-5): "))
+    imax = int(input("Ingrese el número máximo de iteraciones: "))
+
+    if f(a) * f(b) > 0:
+        print("Error: La función debe cambiar de signo en el intervalo [a, b].")
+        return
+
+    xr = (a + b) / 2
+    ea = np.inf
+    i = 0
+    tabla = []
+    tabla.append([i, a, b, xr, f(xr), "--"])
+
+    while ea > tol and i < imax:
+        xr_old = xr
+        if f(a) * f(xr) < 0:
+            b = xr
+        else:
+            a = xr
+        xr = (a + b) / 2
+        i += 1
+        ea = abs(xr - xr_old)
+        tabla.append([i, a, b, xr, f(xr), ea])
+
+    # Mostrar resultados
+    print("\nMétodo de Bisección")
+    print(f"Raíz aproximada: x = {xr}, f(x) = {f(xr)}\n")
+
+    print(tabulate(tabla, headers=["Iteración", "a", "b", "xr", "f(xr)", "Error abs"]))
+
+
+    x_vals = np.linspace(a - 1, b + 1, 400)
+    y_vals = f(x_vals)
+
+    plt.figure(figsize=(10, 6))
+    plt.axhline(0, color='gray', linestyle=':')
+    plt.plot(x_vals, y_vals, label="f(x)", color='blue')
+    plt.plot(xr, f(xr), 'ro', label="Raíz aproximada")
+    plt.title("Método de Bisección")
+    plt.xlabel("x")
+    plt.ylabel("f(x)")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 
 if __name__ == "__main__":
