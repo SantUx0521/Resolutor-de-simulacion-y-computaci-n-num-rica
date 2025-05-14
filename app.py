@@ -8,12 +8,13 @@ from tabulate import tabulate
 st.title("¡Bienvenido!")
 st.subheader("Selecciona el tema que deseas explorar:")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 Polinomios de Taylor",
     "📈 Teoría del Error",
-    "🔢 Binarios",
+    "🔢 Bin",
     "🍎 Método de Newton-Raphson",
-    "✂️ Método de Bisección"
+    "✂️ Bisección",
+    "📐 Interpolación de Newton"
 ])
 
 with tab1:
@@ -231,5 +232,86 @@ with tab5:
             ax_biseccion.grid(True)
             st.pyplot(fig_biseccion)
 
-with tab3:
-    st.header("Binarios")
+with tab6:
+    st.header("Interpolación de Newton: elige tu formato")
+
+    modo = st.radio(
+        "Selecciona el formato de entrada:",
+        ["Sumatoria g(k)", "Valores Δ⁰ (f(n))"],
+        index=0
+    )
+
+    # 1) Formulario para sumatoria g(k)
+    if modo == "Sumatoria g(k)":
+        with st.expander("Modo 1: Desde sumatoria g(k)", expanded=True):
+            with st.form("form_sumatoria"):
+                st.markdown(
+                    "Define $$f(n) = \\sum_{k=1}^n g(k)$$ introduciendo **g(k)**:"
+                )
+                g_expr = st.text_input(
+                    "g(k) =", value="(2*n-1)**2", key="sum_g"
+                )
+                submit_sum = st.form_submit_button("Calcular sumatoria")
+
+            if submit_sum:
+                import sympy as sp
+                import pandas as pd
+
+                # símbolos
+                n, k, x = sp.symbols('n k x')
+                g_sym = sp.sympify(g_expr, locals={'n': k, 'k': k})
+
+                # buscamos m automático
+                f_vals = []
+                ns = []
+                m = 0
+                orden_fin = None
+
+                while True:
+                    m += 1
+                    ns.append(m)
+                    f_vals.append(sp.summation(g_sym, (k, 1, m)))
+
+                    # tabla provisional
+                    dd = [[None]*m for _ in range(m)]
+                    for i in range(m):
+                        dd[i][0] = f_vals[i]
+                    for j in range(1, m):
+                        for i in range(m-j):
+                            dd[i][j] = (dd[i+1][j-1] - dd[i][j-1])/(ns[i+j] - ns[i])
+
+                    # ¿alguna Δ^j f(1) == 0?
+                    for j in range(1, m):
+                        if sp.simplify(dd[0][j]) == 0:
+                            orden_fin = j
+                            break
+                    if orden_fin is not None:
+                        break
+
+                # extraer coeficientes y polinomio
+                a = [dd[0][j] for j in range(orden_fin)]
+                P = a[0]
+                term = 1
+                for j in range(1, orden_fin):
+                    term *= (x - ns[j-1])
+                    P += a[j]*term
+                P_simpl = sp.simplify(P)
+
+                # mostrar resultados
+                st.write(f"— La tabla 'termina' en Δ^{orden_fin}, con m = {m} puntos.")
+                st.subheader("Valores de f(n):")
+                st.table(list(zip(ns, [int(v) for v in f_vals])))
+
+                st.subheader("Tabla de diferencias divididas:")
+                cols = [f"Δ^{j}" for j in range(orden_fin+1)]
+                df = pd.DataFrame(dd, index=[f"n={i}" for i in ns], columns=cols)
+                st.dataframe(df)
+
+                st.subheader("Polinomio de Newton (grado ≤ {})".format(orden_fin-1))
+                st.latex(P)
+
+                st.subheader("Polinomio simplificado:")
+                st.latex(P_simpl)
+
+                st.subheader("Recurrencia básica:")
+                st.latex(sp.Eq(sp.Function('f')(n) - sp.Function('f')(n-1), g_sym))
