@@ -8,13 +8,17 @@ from tabulate import tabulate
 st.title("¡Bienvenido!")
 st.subheader("Selecciona el tema que deseas explorar:")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5= st.tabs([
     "📊 Polinomios de Taylor",
     "📈 Teoría del Error",
     "🔢 Bin",
     "🍎 Método de Newton-Raphson",
-    "✂️ Bisección",
-    "📐 Interpolación de Newton"
+    "✂️ Método de Bisección",
+])
+
+tab6, tab7  = st.tabs([
+    "📐 Interpolación de Newton",
+    "🧷 Interpolación de Lagrange y Error"
 ])
 
 with tab1:
@@ -233,54 +237,51 @@ with tab5:
             st.pyplot(fig_biseccion)
 
 with tab6:
-    st.header("Interpolación de Newton: elige tu formato")
+    st.header("Interpolación de Newton")
 
+ # Opción de entrada: sumatoria o valores directos
     modo = st.radio(
         "Selecciona el formato de entrada:",
         ["Sumatoria g(k)", "Valores Δ⁰ (f(n))"],
         index=0
     )
 
-    # 1) Formulario para sumatoria g(k)
+    # --- Modo 1: desde la sumatoria g(k)
     if modo == "Sumatoria g(k)":
         with st.expander("Modo 1: Desde sumatoria g(k)", expanded=True):
+            # Formulario para ingresar g(k)
             with st.form("form_sumatoria"):
-                st.markdown(
-                    "Define $$f(n) = \\sum_{k=1}^n g(k)$$ introduciendo **g(k)**:"
-                )
-                g_expr = st.text_input(
-                    "g(k) =", value="(2*n-1)**2", key="sum_g"
-                )
+                st.markdown("Define $$f(n) = \sum_{k=1}^n g(k)$$ introduciendo **g(k)**:")
+                g_expr = st.text_input("g(k) =", value="(2*n-1)**2", key="sum_g")
                 submit_sum = st.form_submit_button("Calcular sumatoria")
 
             if submit_sum:
                 import sympy as sp
                 import pandas as pd
 
-                # símbolos
+                # Definir símbolos
                 n, k, x = sp.symbols('n k x')
+                # Convertir la cadena g_expr a función simbólica
                 g_sym = sp.sympify(g_expr, locals={'n': k, 'k': k})
 
-                # buscamos m automático
-                f_vals = []
-                ns = []
-                m = 0
-                orden_fin = None
-
+                # Calcular valores de f(1), f(2), ... hasta detectar ceros en diferencias
+                f_vals, ns = [], []
+                m, orden_fin = 0, None
                 while True:
                     m += 1
                     ns.append(m)
+                    # f(m) = sum g_sym(k) desde k=1 hasta m
                     f_vals.append(sp.summation(g_sym, (k, 1, m)))
 
-                    # tabla provisional
+                    # Construcción provisional de la tabla de diferencias
                     dd = [[None]*m for _ in range(m)]
                     for i in range(m):
                         dd[i][0] = f_vals[i]
                     for j in range(1, m):
-                        for i in range(m-j):
-                            dd[i][j] = (dd[i+1][j-1] - dd[i][j-1])/(ns[i+j] - ns[i])
+                        for i in range(m - j):
+                            dd[i][j] = (dd[i+1][j-1] - dd[i][j-1]) / (ns[i+j] - ns[i])
 
-                    # ¿alguna Δ^j f(1) == 0?
+                    # Buscar primera columna j donde Δ^j f(1) sea cero
                     for j in range(1, m):
                         if sp.simplify(dd[0][j]) == 0:
                             orden_fin = j
@@ -288,17 +289,17 @@ with tab6:
                     if orden_fin is not None:
                         break
 
-                # extraer coeficientes y polinomio
+                # Extraer coeficientes a_j y construir P(x)
                 a = [dd[0][j] for j in range(orden_fin)]
                 P = a[0]
                 term = 1
                 for j in range(1, orden_fin):
-                    term *= (x - ns[j-1])
-                    P += a[j]*term
+                    term *= (x - ns[j-1])  # factor (x - n_{j-1})
+                    P += a[j] * term
                 P_simpl = sp.simplify(P)
 
-                # mostrar resultados
-                st.write(f"— La tabla 'termina' en Δ^{orden_fin}, con m = {m} puntos.")
+                # Mostrar resultados
+                st.write(f"La tabla termina en Δ^{orden_fin}, con m = {m} puntos.")
                 st.subheader("Valores de f(n):")
                 st.table(list(zip(ns, [int(v) for v in f_vals])))
 
@@ -307,11 +308,75 @@ with tab6:
                 df = pd.DataFrame(dd, index=[f"n={i}" for i in ns], columns=cols)
                 st.dataframe(df)
 
-                st.subheader("Polinomio de Newton (grado ≤ {})".format(orden_fin-1))
+                st.subheader(f"Polinomio de Newton (grado ≤ {orden_fin-1})")
                 st.latex(P)
-
                 st.subheader("Polinomio simplificado:")
                 st.latex(P_simpl)
 
                 st.subheader("Recurrencia básica:")
                 st.latex(sp.Eq(sp.Function('f')(n) - sp.Function('f')(n-1), g_sym))
+
+# --- tab7: Interpolación de Lagrange ---
+with tab7:
+    st.header("Interpolación de Lagrange y Error")
+
+    # Entradas: función, nodos y punto de evaluación
+    expr_lagrange = st.text_input("Ingrese la función f(x):", value="ln(1+x)", key="lagrange_fx")
+    x_nodes = st.text_input("Ingrese los nodos x separados por comas:", value="0,0.6,0.9", key="lagrange_nodes")
+    x_eval = st.number_input("Valor de x para evaluar el polinomio:", value=0.46, key="lagrange_eval")
+
+    if st.button("Calcular Polinomio de Lagrange", key="lagrange_btn"):
+        try:
+            import sympy as sp
+            # Definir símbolo y parsear función
+            x = sp.Symbol('x')
+            f_expr = sp.sympify(expr_lagrange, locals={'e': sp.E, 'ln': sp.log})
+            f = sp.lambdify(x, f_expr, modules=['numpy'])
+
+            # Convertir nodos a lista de floats y evaluar f en ellos
+            x_list = [float(val) for val in x_nodes.split(",")]
+            y_list = [f(val) for val in x_list]
+
+            # Construir y mostrar cada base L_i(x)
+            st.subheader("Términos L_i(x):")
+            L_terms = []
+            n = len(x_list)
+            for i in range(n):
+                Li = 1
+                for j in range(n):
+                    if i != j:
+                        # (x - x_j)/(x_i - x_j)
+                        Li *= (x - x_list[j])/(x_list[i] - x_list[j])
+                Li_s = sp.simplify(Li)
+                L_terms.append(Li_s)
+                st.latex(f"L_{i}(x) = {sp.latex(Li_s)}")
+
+            # Calcular y mostrar términos y_i * L_i(x)
+            st.subheader("Términos y_i · L_i(x):")
+            product_terms = []
+            for i in range(n):
+                term = sp.simplify(y_list[i] * L_terms[i])
+                product_terms.append(term)
+                st.latex(
+                    f"y_{i} · L_{i}(x) = {sp.latex(y_list[i])}·{sp.latex(L_terms[i])} = {sp.latex(term)}"
+                )
+
+            # Polinomio completo P(x)
+            P = sum(product_terms)
+            P_expanded = sp.expand(P)
+            st.subheader("Polinomio Interpolante P(x):")
+            st.latex(f"P(x) = {sp.latex(P_expanded)}")
+
+            # Evaluación en x_eval y cálculo del error
+            p_func = sp.lambdify(x, P_expanded, modules=['numpy'])
+            p_val = p_func(x_eval)
+            f_val = f(x_eval)
+            error = abs(f_val - p_val)
+
+            st.subheader("Evaluación y Error:")
+            st.write(f"f({x_eval}) = {f_val}")
+            st.write(f"P({x_eval}) = {p_val}")
+            st.write(f"Error absoluto = {error}")
+
+        except Exception as e:
+            st.error(f"Error al procesar la entrada: {e}")
