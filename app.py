@@ -39,7 +39,38 @@ with tab1:
             T += term
             
         st.subheader("Polinomio de Taylor:")
-        st.latex(sp.expand(T))
+        terms_latex = []
+        current_df = f_sym
+        for k in range(n + 1):
+            if k == 0:
+                coef = current_df.subs(x, a)
+                terms_latex.append(f"{sp.latex(coef)}")
+            else:
+                current_df = sp.diff(current_df, x)
+                deriv_eval = current_df.subs(x, a)
+                coef = deriv_eval / factorial(k)
+
+                if coef == 0:
+                    continue  # Omitir términos nulos
+
+                # Convertir a fracción racional para evaluar
+                rat = sp.Rational(coef).limit_denominator()
+                if rat.q == 1:
+                    coef_latex = sp.latex(rat.p)
+                else:
+                    coef_latex = f"\\frac{{{rat.p}}}{{{rat.q}}}"
+
+                # Manejar potencia
+                if a == 0:
+                    power = f"x^{k}" if k > 1 else "x"
+                else:
+                    power = f"(x - {a})^{k}" if k > 1 else f"(x - {a})"
+
+                term = f"{coef_latex}{power}"
+                terms_latex.append(term)
+
+        taylor_str = " + ".join(terms_latex)
+        st.latex(f"T_{{{n}}}(x) = {taylor_str}")
 
         f_func = sp.lambdify(x, dfk, modules=["numpy"])
         t_func = sp.lambdify(x, T, modules=["numpy"])
@@ -386,7 +417,7 @@ with tab7:
 with tab8:  
     st.header("Polinomio de Taylor con Aproximación 10⁻ⁿ")
     # funcion donde se realiza la logica para la aproximacion; recibe la funcion, un punto x0, y la presicion deseada. 
-    def taylor_with_precision(f_expr, x, a, accuracy):
+    def taylor_accuracy(f_expr, x, a, accuracy):
         # declara los valores
         f = sp.sympify(f_expr, locals={'e': sp.E, 'exp': sp.exp})
         T = f.subs(x, a)  # Primer término
@@ -416,7 +447,7 @@ with tab8:
             #declara el simbolo y parsea la función
             f_sym = sp.sympify(expr, locals={'e': sp.E, 'exp': sp.exp})
             epsilon = 10**(-accuracy) # declara la presicion que se desea que tenga el polinomio de taylor, en este caso digita unicamente el valor de n, n es siempre negativo
-            T, n = taylor_with_precision(expr, x, a, epsilon)
+            T, n = taylor_accuracy(expr, x, a, epsilon)
 
             st.success(f"Polinomio de Taylor de grado {n} con error < {epsilon:.1e}") 
             st.latex(f"T_{n}(x) = {sp.latex(T.simplify())}")
