@@ -16,9 +16,10 @@ tab1, tab2, tab3, tab4, tab5= st.tabs([
     "✂️ Método de Bisección",
 ])
 
-tab6, tab7  = st.tabs([
+tab6, tab7, tab8  = st.tabs([
     "📐 Interpolación de Newton",
-    "🧷 Interpolación de Lagrange y Error"
+    "🧷 Interpolación de Lagrange y Error",
+    "Taylor con una aproximacion 10⁻ⁿ"
 ])
 
 with tab1:
@@ -30,17 +31,17 @@ with tab1:
     if st.button("Generar Polinomio de Taylor", key="taylor_generar"):
         x = sp.symbols('x')
         f_sym = sp.sympify(expr, locals={'e': sp.exp(1)})
-        F = f_sym
         T = f_sym.subs(x, a)
+        dfk = f_sym
         for k in range(1, n + 1):
-            dfk = sp.diff(f_sym, x)
-            T = T + dfk.subs(x, a) * ((x - a) ** k) / factorial(k)
-            f_sym = dfk
-
+            dfk = sp.diff(dfk, x)
+            term = dfk.subs(x, a) * (x - a) ** k / factorial(k)
+            T += term
+            
         st.subheader("Polinomio de Taylor:")
         st.latex(sp.expand(T))
 
-        f_func = sp.lambdify(x, F, modules=["numpy"])
+        f_func = sp.lambdify(x, dfk, modules=["numpy"])
         t_func = sp.lambdify(x, T, modules=["numpy"])
 
         x_vals = np.linspace(float(a) - 3, float(a) + 3, 400)
@@ -380,3 +381,62 @@ with tab7:
 
         except Exception as e:
             st.error(f"Error al procesar la entrada: {e}")
+
+# --- tab8: integra el sistema para aproximar un x con una precision de 10^n ---
+with tab8:  
+    st.header("Polinomio de Taylor con Aproximación 10⁻ⁿ")
+    # funcion donde se realiza la logica para la aproximacion; recibe la funcion, un punto x0, y la presicion deseada. 
+    def taylor_with_precision(f_expr, x, a, accuracy):
+        # declara los valores
+        f = sp.sympify(f_expr, locals={'e': sp.E, 'exp': sp.exp})
+        T = f.subs(x, a)  # Primer término
+        df = f
+        n = 0
+        estimate = float('inf')
+        
+        # garantiza que el error sea siempre menor que el n estimado
+        while estimate > accuracy:
+            n += 1
+            df = sp.diff(df, x) # utilizado para conseguir la derivada n-esima
+            term = df.subs(x, a) * (x - a)**n / sp.factorial(n) 
+            T += term
+            df_n1 = sp.diff(df, x)
+            estimate = abs(df_n1.subs(x, a + 0.1) * (0.1)**(n+1)) / sp.factorial(n+1) #estima el siguiente termino con la derivada n+1
+        
+        return T, n #devuelve el polinomio completo
+    
+    # Aqui se registran las entradas del usuario
+    a = st.number_input("Digite el punto al rededor del cual desea el polinomio (x0):", value=1.0, key="taylor_a2") # recibe un valor de x0 alrededor del cual se arma el polinomio de taylor
+    accuracy = st.number_input("Digite la presicion deseada para el polinomio (valor de n en 10⁻ⁿ):", min_value=1, step=1, value=6, key="taylor_error") # solicita una presicion con la cual se desea el polinomio 
+    expr = st.text_input("Función f(x):", value="x*exp(x)", key="taylor_fx1") # recibe una funcion f(x)
+
+    if st.button("Calcular Polinomio"):
+        x = sp.symbols('x')
+        try:
+            #declara el simbolo y parsea la función
+            f_sym = sp.sympify(expr, locals={'e': sp.E, 'exp': sp.exp})
+            epsilon = 10**(-accuracy) # declara la presicion que se desea que tenga el polinomio de taylor, en este caso digita unicamente el valor de n, n es siempre negativo
+            T, n = taylor_with_precision(expr, x, a, epsilon)
+
+            st.success(f"Polinomio de Taylor de grado {n} con error < {epsilon:.1e}") 
+            st.latex(f"T_{n}(x) = {sp.latex(T.simplify())}")
+            # necesario para graficar el polinomio de taylor, funciona igual al taylor incial.
+            f_func = sp.lambdify(x, f_sym, modules=['numpy'])
+            t_func = sp.lambdify(x, T, modules=['numpy'])
+                
+            x_vals = np.linspace(float(a) - 2, float(a) + 2, 400)
+            y_vals_f = f_func(x_vals)
+            y_vals_t = t_func(x_vals)
+                
+            fig, ax = plt.subplots()
+            ax.plot(x_vals, y_vals_f, label='f(x)', color='black')
+            ax.plot(x_vals, y_vals_t, label=f'Taylor (n={n})', color='purple', linestyle='--')
+            ax.axvline(a, color='red', linestyle=':', label=f'x = {a}')
+            ax.set_title('Aproximación de Taylor')
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.legend()
+            ax.grid(True)
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Error al procesar la entrada: {e}")   
