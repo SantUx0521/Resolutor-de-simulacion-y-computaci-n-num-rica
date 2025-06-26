@@ -474,8 +474,9 @@ with tab8:
         except Exception as e:
             st.error(f"Error al procesar la entrada: {e}") 
 
+# ---------- Interpolacion por Diferencias divididas ------------------
 with tab9:
-    st.header("Diferencias Divididas")
+    st.header("Interpolacion de Newton por Diferencias Divididas")
 
     st.markdown("### Ingrese los puntos (x, f(x))")
     puntos_input = st.text_area("Formato: x0,y0 | x1,y1 | x2,y2", value="1,1\n2,4\n3,9")
@@ -517,7 +518,7 @@ with tab9:
             df_interp = pd.DataFrame(dd[:, :n], columns=[f"DD{j}" for j in range(n)])
             st.dataframe(df_interp)
 
-            # Gráfico
+            # Bloque para generar el grafico
             x_vals = np.linspace(min(xs) - 1, max(xs) + 1, 400)
             y_vals = p_func(x_vals)
             fig, ax = plt.subplots()
