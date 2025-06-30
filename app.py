@@ -535,70 +535,83 @@ with tab9:
             except Exception as e:
                 st.error(f"Error al procesar la entrada: {e}")
 with tab10:
-    st.header("Método de Diferencias Finitas Progresivas")
+    st.header("Método de diferencias finitas para EDO")
 
-    st.markdown("### Ingrese los puntos (x, f(x))")
-    puntos_input = st.text_area("Formato: x0,y0 | x1,y1 | x2,y2 | ...", value="0.1,1\n0.2,2\n0.3,3.5")
-    x_eval = st.number_input("Valor de x a interpolar:", value=0.25, key="finite_x_eval")
+    st.markdown("### Ecuación diferencial de segundo orden")
+    st.latex(r""" y'' + p(x)y' + q(x)y = r(x) """)
 
-    if st.button("Calcular", key="finite_btn"):
+    col1, col2 = st.columns(2)
+    with col1:
+        a = float(sp.sympify(st.text_input("Inicio del intervalo (a)", value="0")))
+        alpha = st.number_input("Condición inicial y(a):", value=1.0)
+        p_str = st.text_input("p(x) =", value="-2")
+        q_str = st.text_input("q(x) =", value="1")
+        r_str = st.text_input("r(x) =", value="-x")
+    with col2:
+        b = float(sp.sympify(st.text_input("Fin del intervalo (b)", value="pi/2")))
+        beta = st.number_input("Condición final y(b):", value=10.0)
+        N = st.number_input("Número de subintervalos (N):", value=4, step=1, min_value=2)
+
+    if st.button("Resolver EDO", key="solve_finite_diff"):
         try:
+            x = sp.Symbol('x')
+            p_expr = sp.sympify(p_str)
+            q_expr = sp.sympify(q_str)
+            r_expr = sp.sympify(r_str)
 
-            lines = puntos_input.strip().split("\n")
-            data = [tuple(map(float, line.split(","))) for line in lines]
-            xi, fi = zip(*data)
-            xi = np.array(xi)
-            fi = np.array(fi)
-            n = len(xi)
+            h = (b - a) / N
+            x_vals = np.array([a + i * h for i in range(N + 1)])
 
-            if not np.allclose(np.diff(xi), np.diff(xi)[0]):
-                st.error("Los puntos deben estar espaciados para usar diferencias finitas.")
-            else:
-                h = xi[1] - xi[0]
-                titulo = ['i', 'xi', 'fi']
-                ki = np.arange(n)
-                tabla = np.column_stack((ki, xi, fi))
-                dfinita = np.zeros((n, n))
-                tabla = np.column_stack((tabla, dfinita))
-                diagonal = n - 1
-                j = 3
-                while j < tabla.shape[1]:
-                    for i in range(diagonal):
-                        tabla[i, j] = tabla[i + 1, j - 1] - tabla[i, j - 1]
-                    titulo.append(f"Δ{j-2}")
-                    diagonal -= 1
-                    j += 1
+            p_func = sp.lambdify(x, p_expr, 'numpy')
+            q_func = sp.lambdify(x, q_expr, 'numpy')
+            r_func = sp.lambdify(x, r_expr, 'numpy')
 
-                # Realiza el polinomio
-                x = sp.Symbol('x')
-                s = (x - xi[0]) / h
-                P = fi[0]
-                s_prod = 1
-                for k in range(1, n):
-                    s_prod *= (s - (k - 1))
-                    P += (tabla[0, k + 2] * s_prod) / sp.factorial(k)
+            A = np.zeros((N - 1, N - 1))
+            b_vec = np.zeros(N - 1)
 
-                P_simpl = sp.simplify(P)
-                st.latex(f"P(x) = {sp.latex(P_simpl)}")
+            for i in range(1, N):
+                xi = x_vals[i]
+                pi = p_func(xi)
+                qi = q_func(xi)
+                ri = r_func(xi)
 
-                # Evalua el polinomio
-                p_func = sp.lambdify(x, P_simpl, modules=['numpy'])
-                y_eval = p_func(x_eval)
-                st.write(f"P({x_eval}) = {y_eval}")
+                a_i = 1 - h * pi / 2
+                b_i = -2 + h ** 2 * qi
+                c_i = 1 + h * pi / 2
+                rhs = h ** 2 * ri
 
-                df_tabla = pd.DataFrame(tabla[:, :len(titulo)], columns=titulo)
-                st.subheader("Tabla de Diferencias Finitas:")
-                st.dataframe(df_tabla)
+                if i == 1:
+                    b_vec[i - 1] = rhs - a_i * alpha
+                    A[i - 1, i - 1] = b_i
+                    A[i - 1, i] = c_i
+                elif i == N - 1:
+                    b_vec[i - 1] = rhs - c_i * beta
+                    A[i - 1, i - 2] = a_i
+                    A[i - 1, i - 1] = b_i
+                else:
+                    b_vec[i - 1] = rhs
+                    A[i - 1, i - 2] = a_i
+                    A[i - 1, i - 1] = b_i
+                    A[i - 1, i] = c_i
 
-                x_vals = np.linspace(min(xi)-0.1, max(xi)+0.1, 400)
-                y_vals = p_func(x_vals)
-                fig, ax = plt.subplots()
-                ax.plot(x_vals, y_vals, label="Interpolación", color="blue")
-                ax.scatter(xi, fi, color='red', label="Puntos")
-                ax.scatter(x_eval, y_eval, color='green', label=f"P({x_eval})")
-                ax.grid(True)
-                ax.legend()
-                st.pyplot(fig)
+            y_inner = np.linalg.solve(A, b_vec)
+            y_full = np.concatenate(([alpha], y_inner, [beta]))
+
+            df_result = pd.DataFrame({"x": x_vals, "y": y_full})
+            st.subheader("Resultados de la solución:")
+            st.dataframe(df_result)
+
+            st.subheader("Matriz del sistema (A):")
+            st.dataframe(pd.DataFrame(A))
+
+            st.subheader("Vector del lado derecho (b):")
+            st.dataframe(pd.DataFrame(b_vec.reshape(-1, 1), columns=["b"]))
+
+            fig, ax = plt.subplots()
+            ax.plot(x_vals, y_full, marker='o', label="Solución y(x)")
+            ax.grid(True)
+            ax.legend()
+            st.pyplot(fig)
 
         except Exception as e:
-            st.error(f"Error al procesar la entrada: {e}")
+            st.error(f"Error al resolver la EDO: {e}")
