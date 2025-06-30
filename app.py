@@ -1,5 +1,6 @@
 import streamlit as st
 from math import factorial
+import math
 import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,11 +18,15 @@ tab1, tab2, tab3, tab4, tab5= st.tabs([
     "✂️ Método de Bisección",
 ])
 
-tab6, tab7, tab8, tab9  = st.tabs([
+tab6, tab7, tab8,  = st.tabs([
     "📐 Interpolación de Newton",
     "🧷 Interpolación de Lagrange y Error",
-    "❗Taylor con una aproximacion 10⁻ⁿ",
-    "🧮 Diferencias divididas"
+    "❗Taylor con una aproximacion 10⁻ⁿ"
+])
+
+tab9, tab10 = st.tabs([
+    "🧮 Diferencias divididas",
+    "📓Diferencias finitas"
 ])
 
 with tab1:
@@ -476,58 +481,124 @@ with tab8:
 
 # ---------- Interpolacion por Diferencias divididas ------------------
 with tab9:
-    st.header("Interpolacion de Newton por Diferencias Divididas")
+        st.header("Interpolacion de Newton por Diferencias Divididas")
+
+        st.markdown("### Ingrese los puntos (x, f(x))")
+        puntos_input = st.text_area("Formato: x0,y0 | x1,y1 | x2,y2| ...", value="1,1\n2,4\n3,9")
+        x_eval = st.number_input("Valor de x a interpolar:", value=2.5, key="interp_x_eval")
+
+        if st.button("Interpolar", key="interp_btn"):
+            try:
+                lines = puntos_input.strip().split("\n")
+                data = [tuple(map(float, line.split(","))) for line in lines]
+                xs, ys = zip(*data)
+
+                # Tabla de diferencias divididas
+                n = len(xs)
+                dd = np.zeros((n, n))
+                dd[:, 0] = ys
+                for j in range(1, n):
+                    for i in range(n - j):
+                        dd[i][j] = (dd[i+1][j-1] - dd[i][j-1]) / (xs[i+j] - xs[i])
+                x = sp.Symbol('x')
+                poly = 0
+                for j in range(n):
+                    term = dd[0, j]
+                    for i in range(j):
+                        term *= (x - xs[i])
+                    poly += term
+
+                poly_simpl = sp.simplify(poly)
+                st.latex(f"P(x) = {sp.latex(poly_simpl)}")
+
+                # Evaluación
+                p_func = sp.lambdify(x, poly_simpl, modules=['numpy'])
+                y_interp = p_func(x_eval)
+                st.write(f"P({x_eval}) = {y_interp}")
+
+                # Tabla manejada por libreria pandas
+                st.subheader("Tabla de diferencias divididas:")
+                df_interp = pd.DataFrame(dd[:, :n], columns=[f"DD{j}" for j in range(n)])
+                st.dataframe(df_interp)
+
+                # Bloque para generar el grafico
+                x_vals = np.linspace(min(xs) - 1, max(xs) + 1, 400)
+                y_vals = p_func(x_vals)
+                fig, ax = plt.subplots()
+                ax.plot(x_vals, y_vals, label="Interpolación", color="blue")
+                ax.scatter(xs, ys, color='red', label="Puntos")
+                ax.scatter(x_eval, y_interp, color='green', label=f"P({x_eval})")
+                ax.grid(True)
+                ax.legend()
+                st.pyplot(fig)
+
+            except Exception as e:
+                st.error(f"Error al procesar la entrada: {e}")
+with tab10:
+    st.header("Método de Diferencias Finitas Progresivas")
 
     st.markdown("### Ingrese los puntos (x, f(x))")
-    puntos_input = st.text_area("Formato: x0,y0 | x1,y1 | x2,y2", value="1,1\n2,4\n3,9")
-    x_eval = st.number_input("Valor de x a interpolar:", value=2.5, key="interp_x_eval")
+    puntos_input = st.text_area("Formato: x0,y0 | x1,y1 | x2,y2 | ...", value="0.1,1\n0.2,2\n0.3,3.5")
+    x_eval = st.number_input("Valor de x a interpolar:", value=0.25, key="finite_x_eval")
 
-    if st.button("Interpolar", key="interp_btn"):
+    if st.button("Calcular", key="finite_btn"):
         try:
+
             lines = puntos_input.strip().split("\n")
             data = [tuple(map(float, line.split(","))) for line in lines]
-            xs, ys = zip(*data)
+            xi, fi = zip(*data)
+            xi = np.array(xi)
+            fi = np.array(fi)
+            n = len(xi)
 
-            # Tabla de diferencias divididas
-            n = len(xs)
-            dd = np.zeros((n, n))
-            dd[:, 0] = ys
-            for j in range(1, n):
-                for i in range(n - j):
-                    dd[i][j] = (dd[i+1][j-1] - dd[i][j-1]) / (xs[i+j] - xs[i])
+            if not np.allclose(np.diff(xi), np.diff(xi)[0]):
+                st.error("Los puntos deben estar espaciados para usar diferencias finitas.")
+            else:
+                h = xi[1] - xi[0]
+                titulo = ['i', 'xi', 'fi']
+                ki = np.arange(n)
+                tabla = np.column_stack((ki, xi, fi))
+                dfinita = np.zeros((n, n))
+                tabla = np.column_stack((tabla, dfinita))
+                diagonal = n - 1
+                j = 3
+                while j < tabla.shape[1]:
+                    for i in range(diagonal):
+                        tabla[i, j] = tabla[i + 1, j - 1] - tabla[i, j - 1]
+                    titulo.append(f"Δ{j-2}")
+                    diagonal -= 1
+                    j += 1
 
-            # Construcción del polinomio
-            x = sp.Symbol('x')
-            poly = 0
-            for j in range(n):
-                term = dd[0, j]
-                for i in range(j):
-                    term *= (x - xs[i])
-                poly += term
+                # Realiza el polinomio
+                x = sp.Symbol('x')
+                s = (x - xi[0]) / h
+                P = fi[0]
+                s_prod = 1
+                for k in range(1, n):
+                    s_prod *= (s - (k - 1))
+                    P += (tabla[0, k + 2] * s_prod) / sp.factorial(k)
 
-            poly_simpl = sp.simplify(poly)
-            st.latex(f"P(x) = {sp.latex(poly_simpl)}")
+                P_simpl = sp.simplify(P)
+                st.latex(f"P(x) = {sp.latex(P_simpl)}")
 
-            # Evaluación
-            p_func = sp.lambdify(x, poly_simpl, modules=['numpy'])
-            y_interp = p_func(x_eval)
-            st.write(f"P({x_eval}) = {y_interp}")
+                # Evalua el polinomio
+                p_func = sp.lambdify(x, P_simpl, modules=['numpy'])
+                y_eval = p_func(x_eval)
+                st.write(f"P({x_eval}) = {y_eval}")
 
-            # Tabla manejada por libreria pandas
-            st.subheader("Tabla de diferencias divididas:")
-            df_interp = pd.DataFrame(dd[:, :n], columns=[f"DD{j}" for j in range(n)])
-            st.dataframe(df_interp)
+                df_tabla = pd.DataFrame(tabla[:, :len(titulo)], columns=titulo)
+                st.subheader("Tabla de Diferencias Finitas:")
+                st.dataframe(df_tabla)
 
-            # Bloque para generar el grafico
-            x_vals = np.linspace(min(xs) - 1, max(xs) + 1, 400)
-            y_vals = p_func(x_vals)
-            fig, ax = plt.subplots()
-            ax.plot(x_vals, y_vals, label="Interpolación", color="blue")
-            ax.scatter(xs, ys, color='red', label="Puntos")
-            ax.scatter(x_eval, y_interp, color='green', label=f"P({x_eval})")
-            ax.grid(True)
-            ax.legend()
-            st.pyplot(fig)
+                x_vals = np.linspace(min(xi)-0.1, max(xi)+0.1, 400)
+                y_vals = p_func(x_vals)
+                fig, ax = plt.subplots()
+                ax.plot(x_vals, y_vals, label="Interpolación", color="blue")
+                ax.scatter(xi, fi, color='red', label="Puntos")
+                ax.scatter(x_eval, y_eval, color='green', label=f"P({x_eval})")
+                ax.grid(True)
+                ax.legend()
+                st.pyplot(fig)
 
         except Exception as e:
             st.error(f"Error al procesar la entrada: {e}")
