@@ -24,9 +24,10 @@ tab6, tab7, tab8,  = st.tabs([
     "❗Taylor con una aproximacion 10⁻ⁿ"
 ])
 
-tab9, tab10 = st.tabs([
+tab9, tab10, tab11 = st.tabs([
     "🧮 Diferencias divididas",
-    "📓Diferencias finitas"
+    "📓Diferencias finitas",
+    "📉 Mínimos Cuadrados Lineal"
 ])
 
 with tab1:
@@ -165,8 +166,63 @@ with tab2:
         st.write(f"Error relativo de la operación: {error_rel_op:.5f} ({error_rel_op * 100:.2f}%)")
 
 with tab3:
-    st.header("Binarios")
-    st.info("Aquí podríamos agregar funcionalidades para convertir entre sistemas numéricos o realizar operaciones binarias. ¡Esta sección está lista para que la desarrolles!")
+    st.header("Conversión entre Decimal y Binario (con parte fraccionaria)")
+
+    opcion = st.radio("Seleccione el tipo de conversión:", ["Decimal a Binario", "Binario a Decimal"], key="bin_opcion")
+
+    def decimal_a_binario(num, precision=10):
+        entero = int(num)
+        fraccion = num - entero
+        bin_entero = bin(entero)[2:]
+
+        bin_fraccion = ""
+        count = 0
+        while fraccion > 0 and count < precision:
+            fraccion *= 2
+            bit = int(fraccion)
+            bin_fraccion += str(bit)
+            fraccion -= bit
+            count += 1
+
+        if bin_fraccion:
+            return f"{bin_entero}.{bin_fraccion}"
+        else:
+            return bin_entero
+
+    def binario_a_decimal(bin_str):
+        if '.' in bin_str:
+            parte_entera, parte_frac = bin_str.split('.')
+        else:
+            parte_entera, parte_frac = bin_str, ''
+
+        decimal_entero = int(parte_entera, 2)
+
+        decimal_frac = 0
+        for i, bit in enumerate(parte_frac):
+            if bit not in '01':
+                raise ValueError("Solo se permiten dígitos binarios 0 y 1.")
+            decimal_frac += int(bit) * (2 ** -(i + 1))
+
+        return decimal_entero + decimal_frac
+
+    if opcion == "Decimal a Binario":
+        numero_decimal = st.number_input("Ingrese un número decimal (positivo):", min_value=0.0, key="dec_a_bin")
+        precision = st.slider("Precisión (número de bits en parte fraccionaria):", 1, 20, 10, key="precision_bin")
+        if st.button("Convertir a Binario", key="btn_dec_a_bin"):
+            binario = decimal_a_binario(numero_decimal, precision)
+            st.success(f"Representación binaria: {binario}")
+
+    elif opcion == "Binario a Decimal":
+        numero_binario = st.text_input("Ingrese un número binario (puede incluir '.'): ", value="", key="bin_a_dec")
+        if st.button("Convertir a Decimal", key="btn_bin_a_dec"):
+            try:
+                if all(c in '01.' for c in numero_binario) and numero_binario.count('.') <= 1:
+                    decimal = binario_a_decimal(numero_binario)
+                    st.success(f"Representación decimal: {decimal}")
+                else:
+                    st.error("Entrada inválida. Solo se permiten los dígitos 0, 1 y un único punto decimal.")
+            except ValueError as e:
+                st.error(f"Error al convertir: {e}")
 
 with tab4:
     st.header("Método de Newton-Raphson")
@@ -615,3 +671,44 @@ with tab10:
 
         except Exception as e:
             st.error(f"Error al resolver la EDO: {e}")
+
+with tab11:
+    st.header("Ajuste por Mínimos Cuadrados Lineal")
+
+    st.markdown("### Ingrese los datos (x, y)")
+    puntos_input = st.text_area("Formato: x0,y0 | x1,y1 | x2,y2| ...", value="1,2\n2,3\n3,5")
+
+    if st.button("Calcular Recta de Ajuste"):
+        try:
+            # Leer los datos
+            lines = puntos_input.strip().split("\n")
+            data = [tuple(map(float, line.split(","))) for line in lines]
+            x_vals, y_vals = zip(*data)
+            x_vals = np.array(x_vals)
+            y_vals = np.array(y_vals)
+
+            # Cálculos de mínimos cuadrados
+            n = len(x_vals)
+            sum_x = np.sum(x_vals)
+            sum_y = np.sum(y_vals)
+            sum_xy = np.sum(x_vals * y_vals)
+            sum_x2 = np.sum(x_vals ** 2)
+
+            a1 = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x ** 2)
+            a0 = (sum_y - a1 * sum_x) / n
+
+            st.latex(f"y = {a0:.4f} + {a1:.4f}x")
+
+            # Gráfica
+            y_ajuste = a0 + a1 * x_vals
+            fig, ax = plt.subplots()
+            ax.scatter(x_vals, y_vals, color='red', label='Datos')
+            ax.plot(x_vals, y_ajuste, color='blue', label='Recta de ajuste')
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.grid(True)
+            ax.legend()
+            st.pyplot(fig)
+
+        except Exception as e:
+            st.error(f"Error al procesar los datos: {e}")
