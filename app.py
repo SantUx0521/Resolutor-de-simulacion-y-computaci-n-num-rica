@@ -7,27 +7,212 @@ import matplotlib.pyplot as plt
 from tabulate import tabulate
 import pandas as pd
 
-st.title("¡Bienvenido!")
-st.subheader("Selecciona el tema que deseas explorar:")
+# ==============================================
+# CONFIGURACIÓN INICIAL DE LA PÁGINA
+# ==============================================
+st.set_page_config(
+    page_title="Herramientas Matemáticas", 
+    page_icon="🧮",
+    layout="centered" 
+)
 
-tab1, tab2, tab3, tab4, tab5= st.tabs([
-    "📊 Polinomios de Taylor",
-    "📈 Teoría del Error",
-    "🔢 Bin",
-    "🍎 Método de Newton-Raphson",
-    "✂️ Método de Bisección",
-])
+# Estilos CSS personalizados con ajustes de ancho y espaciado
+st.markdown("""
+<style>
+    /* Contenedor principal con ancho controlado */
+    .main .block-container {
+        max-width: 1200px;
+        padding-top: 1rem;
+        padding-bottom: 2rem;
+    }
+    
+    /* Espacio arriba del subtítulo */
+    .title-container {
+        margin-bottom: 0.5rem;
+    }
+    
+    .subtitle-container {
+        margin-top: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+    
+    /* Estilo para el título principal */
+    .title {
+        color: #2c3e50;
+        font-size: 2.5em;
+        text-align: center;
+        padding-bottom: 10px;
+        font-weight: 700;
+        margin-bottom: 0;
+        border-bottom: 3px solid #4CAF50;
+    }
+    
+    /* Estilo para el subtítulo con espacio superior */
+    .subtitle {
+        text-align: center;
+        color: #5f6c72;
+        font-size: 1.1em;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.5;
+        padding-top: 0.5rem;
+    }
+    
+    /* Contenedor para gráficas con ancho controlado */
+    .plot-container {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 1rem 0;
+    }
+    
+    /* Tabs con scroll horizontal */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        flex-wrap: nowrap;
+        scrollbar-width: thin;
+    }
+    
+    /* Estilo de la scrollbar */
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+    
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Estilo de los tabs individuales */
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        padding: 0 25px;
+        white-space: nowrap;
+        background-color: #2c3e50;
+        color: white !important;
+        border-radius: 8px 8px 0 0 !important;
+        margin-right: 4px !important;
+        font-weight: 500;
+        flex-shrink: 0;
+        border: 1px solid #2c3e50 !important;
+        transition: all 0.3s;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #34495e !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #4CAF50 !important;
+        color: white !important;
+        font-weight: 600;
+    }
+    
+    /* Estilo para headers de sección */
+    .section-header {
+        color: #2c3e50;
+        border-left: 5px solid #4CAF50;
+        padding-left: 10px;
+        margin: 1.5em 0 1em 0;
+        font-size: 1.8em;
+        font-weight: 600;
+    }
+    
+    /* Mejora para botones */
+    .stButton>button {
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 5px;
+        border: none;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .stButton>button:hover {
+        background-color: #45a049;
+        transform: scale(1.02);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    /* Mejora para inputs */
+    .stTextInput>div>div>input, 
+    .stNumberInput>div>div>input,
+    .stTextArea>div>div>textarea {
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        padding: 0.5rem;
+    }
+    
+    /* Contenedores para secciones */
+    .custom-container {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border: 1px solid #e9ecef;
+    }
+    
+    /* Ajustes para tablas */
+    .stDataFrame {
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Ajustes para checkboxes */
+    .stCheckbox>label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-tab6, tab7, tab8,  = st.tabs([
-    "📐 Interpolación de Newton",
-    "🧷 Interpolación de Lagrange y Error",
-    "❗Taylor con una aproximacion 10⁻ⁿ"
-])
+# ==============================================
+# TÍTULO PRINCIPAL 
+# ==============================================
+st.markdown('<h1 class="title">HERRAMIENTAS: SIMULACIÓN Y COMPUTACIÓN NUMÉRICA</h1>', unsafe_allow_html=True)
 
-tab9, tab10, tab11 = st.tabs([
-    "🧮 Diferencias divididas",
-    "📓Diferencias finitas",
-    "📉 Mínimos Cuadrados Lineal"
+# ==============================================
+# SUBTÍTULO 
+# ==============================================
+st.markdown("""
+<div class="subtitle-container">
+    <div class="subtitle">
+        En esta página desarrollamos diferentes métodos numéricos y herramientas matemáticas para análisis computacional 
+        vistos durante el semestre en la asignatura de Simulación y Computación Numérica.
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ==============================================
+# PESTAÑAS 
+# ==============================================
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13 = st.tabs([
+    "📊 POLINOMIOS DE TAYLOR", 
+    "📈 TEORÍA DEL ERROR", 
+    "🔢 SISTEMAS BINARIOS", 
+    "🍎 NEWTON-RAPHSON", 
+    "✂️ MÉTODO DE BISECCIÓN",
+    "📐 INTERPOLACIÓN DE NEWTON", 
+    "🧷 INTERPOLACIÓN DE LAGRANGE", 
+    "❗ TAYLOR CON PRECISIÓN",
+    "🧮 DIFERENCIAS DIVIDIDAS", 
+    "📓 DIFERENCIAS FINITAS",
+    "📉 MÍNIMOS CUADRADOS LINEAL", 
+    "📈 MÍNIMOS CUADRADOS POLINOMIAL", 
+    "📊 MÍNIMOS CUADRADOS EXPONENCIAL"
 ])
 
 with tab1:
@@ -59,16 +244,14 @@ with tab1:
                 coef = deriv_eval / factorial(k)
 
                 if coef == 0:
-                    continue  # Omitir términos nulos
+                    continue
 
-                # Convertir a fracción racional para evaluar
                 rat = sp.Rational(coef).limit_denominator()
                 if rat.q == 1:
                     coef_latex = sp.latex(rat.p)
                 else:
                     coef_latex = f"\\frac{{{rat.p}}}{{{rat.q}}}"
 
-                # Manejar potencia
                 if a == 0:
                     power = f"x^{k}" if k > 1 else "x"
                 else:
@@ -97,16 +280,21 @@ with tab1:
         ax.legend()
         st.pyplot(fig)
 
-        st.subheader("Opciones Adicionales:")
-        if st.checkbox("Mostrar error absoluto en un punto", key="taylor_error_abs_check"):
-            x_eval_error = st.number_input("Valor de x para evaluar el error absoluto:", value=float(a) + 1, key="taylor_error_abs_x")
+    # Opciones adicionales fuera del bloque del botón
+    st.subheader("Opciones Adicionales:")
+    show_abs_error = st.checkbox("Mostrar error absoluto en un punto", key="taylor_error_abs_check")
+    if show_abs_error:
+        x_eval_error = st.number_input("Valor de x para evaluar el error absoluto:", value=float(a) + 1, key="taylor_error_abs_x")
+        if 'f_func' in locals() and 't_func' in locals():
             error = abs(f_func(x_eval_error) - t_func(x_eval_error))
             st.write(f"f({x_eval_error}) = {f_func(x_eval_error)}")
             st.write(f"P{n}({x_eval_error}) = {t_func(x_eval_error)}")
             st.write(f"Error absoluto |f(x) - Pn(x)| = {error}")
 
-        if st.checkbox("Mostrar cota del error máximo", key="taylor_cota_check"):
-            x_eval_cota = st.number_input("Valor de x para evaluar la cota del error:", value=float(a) + 2, key="taylor_cota_x")
+    show_max_error = st.checkbox("Mostrar cota del error máximo", key="taylor_cota_check")
+    if show_max_error:
+        x_eval_cota = st.number_input("Valor de x para evaluar la cota del error:", value=float(a) + 2, key="taylor_cota_x")
+        if 'f_sym' in locals():
             df_n1 = f_sym
             for i in range(n + 1):
                 df_n1 = sp.diff(df_n1, x)
@@ -712,3 +900,147 @@ with tab11:
 
         except Exception as e:
             st.error(f"Error al procesar los datos: {e}")
+
+with tab12:
+    st.header("Ajuste Polinomial (Grado 2)")
+    puntos_input = st.text_area("Ingrese los datos (x,y) - Formato: x0,y0 | x1,y1 | ...", 
+                              value="1,2\n2,3\n3,5\n4,8\n5,9", 
+                              key="poly_data")
+
+    if st.button("Calcular Ajuste Polinomial", key="poly_btn"):
+        try:
+            lines = puntos_input.strip().split("\n")
+            data = [tuple(map(float, line.split(","))) for line in lines if line.strip()]
+            x_vals, y_vals = zip(*data)
+            x_vals = np.array(x_vals)
+            y_vals = np.array(y_vals)
+
+            # Cálculo de sumatorias
+            n = len(x_vals)
+            sum_x = np.sum(x_vals)
+            sum_x2 = np.sum(x_vals**2)
+            sum_x3 = np.sum(x_vals**3)
+            sum_x4 = np.sum(x_vals**4)
+            sum_y = np.sum(y_vals)
+            sum_xy = np.sum(x_vals * y_vals)
+            sum_x2y = np.sum(x_vals**2 * y_vals)
+
+            # Construcción del sistema de ecuaciones
+            A = np.array([
+                [n, sum_x, sum_x2],
+                [sum_x, sum_x2, sum_x3],
+                [sum_x2, sum_x3, sum_x4]
+            ])
+            b = np.array([sum_y, sum_xy, sum_x2y])
+            
+            # Resolución del sistema
+            a0, a1, a2 = np.linalg.solve(A, b)
+
+            st.latex(f"y = {a0:.4f} + {a1:.4f}x + {a2:.4f}x^2")
+
+            # Gráfica
+            plt.figure(figsize=(8, 4))
+            plt.scatter(x_vals, y_vals, color='red', label='Datos')
+            x_fit = np.linspace(min(x_vals), max(x_vals), 100)
+            y_fit = a0 + a1 * x_fit + a2 * x_fit**2
+            plt.plot(x_fit, y_fit, color='green', label='Curva cuadrática')
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.grid(True)
+            plt.legend()
+            st.pyplot(plt)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+            
+with tab13:
+    st.header("Ajuste Exponencial")
+    st.info("Modelo: $y = a \\cdot b^x$")
+    puntos_input = st.text_area("Ingrese los datos (x,y) - Formato: x0,y0 | x1,y1 | ...", 
+                              value="1,2\n2,5\n3,12\n4,30\n5,80", 
+                              key="exp_data")
+
+    if st.button("Calcular Ajuste Exponencial", key="exp_btn"):
+        try:
+            lines = puntos_input.strip().split("\n")
+            data = [tuple(map(float, line.split(","))) for line in lines if line.strip()]
+            x_vals, y_vals = zip(*data)
+            x_vals = np.array(x_vals)
+            y_vals = np.array(y_vals)
+
+            # Verificar valores positivos
+            if np.any(y_vals <= 0):
+                st.error("Error: Todos los valores de y deben ser positivos")
+                st.stop()
+
+            # Transformación logarítmica
+            Y_vals = np.log(y_vals)
+
+            # Ajuste lineal en escala logarítmica
+            n = len(x_vals)
+            sum_x = np.sum(x_vals)
+            sum_Y = np.sum(Y_vals)
+            sum_xY = np.sum(x_vals * Y_vals)
+            sum_x2 = np.sum(x_vals ** 2)
+
+            a1 = (n * sum_xY - sum_x * sum_Y) / (n * sum_x2 - sum_x ** 2)
+            a0 = (sum_Y - a1 * sum_x) / n
+
+            # Conversión a parámetros originales
+            a = np.exp(a0)
+            b = np.exp(a1)
+
+            st.latex(f"y = {a:.4f} \\cdot ({b:.4f})^x")
+
+            # Gráfica
+            plt.figure(figsize=(8, 4))
+            plt.scatter(x_vals, y_vals, color='red', label='Datos')
+            x_fit = np.linspace(min(x_vals), max(x_vals), 100)
+            y_fit = a * (b ** x_fit)
+            plt.plot(x_fit, y_fit, color='purple', label='Curva exponencial')
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.grid(True)
+            plt.legend()
+            st.pyplot(plt)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+
+# ==============================================
+# PIE DE PÁGINA CON INTEGRANTES
+# ==============================================
+st.markdown("""
+<style>
+    .footer {
+        margin-top: 3rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+        text-align: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .integrantes {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .integrante {
+        background-color: #f8f9fa;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        border: 1px solid #dee2e6;
+    }
+</style>
+
+<div class="footer">
+    <div>Desarrollado por:</div>
+    <div class="integrantes">
+        <div class="integrante">Verónica Mujica</div>
+        <div class="integrante">Nicol Murillo</div>
+        <div class="integrante">Santiago Useche</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
